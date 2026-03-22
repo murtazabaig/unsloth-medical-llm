@@ -1,0 +1,318 @@
+{
+  "project_info": {
+    "name": "Medical Language Model Fine-tuning with QLoRA",
+    "version": "1.0.0",
+    "description": "Complete QLoRA fine-tuning workflow for medical domain adaptation",
+    "created": "2024",
+    "domain": "Medical/Clinical AI"
+  },
+  "configurations": {
+    "colab_quick_start": {
+      "description": "Quick configuration for testing in Google Colab (limited resources)",
+      "model": {
+        "base_model": "unsloth/llama-2-7b-bnb-4bit",
+        "max_seq_length": 1024,
+        "quantization": "4-bit",
+        "dtype": "auto"
+      },
+      "training": {
+        "num_epochs": 2,
+        "batch_size": 2,
+        "gradient_accumulation_steps": 2,
+        "learning_rate": 5e-4,
+        "warmup_steps": 50,
+        "weight_decay": 0.01,
+        "logging_steps": 5
+      },
+      "lora": {
+        "rank": 32,
+        "alpha": 16,
+        "dropout": 0.05,
+        "bias": "none"
+      },
+      "notes": "Minimal configuration for testing. Adjust batch_size down if OOM."
+    },
+    "colab_balanced": {
+      "description": "Balanced configuration for Colab T4 GPU (recommended)",
+      "model": {
+        "base_model": "meta-llama/Llama-2-7b-hf",
+        "max_seq_length": 2048,
+        "quantization": "4-bit",
+        "dtype": "auto"
+      },
+      "training": {
+        "num_epochs": 3,
+        "batch_size": 4,
+        "gradient_accumulation_steps": 2,
+        "learning_rate": 5e-4,
+        "warmup_steps": 100,
+        "weight_decay": 0.01,
+        "logging_steps": 10,
+        "save_strategy": "epoch",
+        "evaluation_strategy": "epoch"
+      },
+      "lora": {
+        "rank": 64,
+        "alpha": 16,
+        "dropout": 0.05,
+        "bias": "none",
+        "target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+      },
+      "data": {
+        "train_split": 0.8,
+        "medical_domain": true
+      },
+      "notes": "Optimal for Colab T4 with ~15GB VRAM. Standard medical QA training."
+    },
+    "local_high_resource": {
+      "description": "High-resource local/cloud configuration (40GB+ VRAM)",
+      "model": {
+        "base_model": "meta-llama/Llama-2-13b-hf",
+        "max_seq_length": 4096,
+        "quantization": "4-bit",
+        "dtype": "float16"
+      },
+      "training": {
+        "num_epochs": 5,
+        "batch_size": 8,
+        "gradient_accumulation_steps": 1,
+        "learning_rate": 2e-4,
+        "warmup_steps": 200,
+        "weight_decay": 0.01,
+        "logging_steps": 20,
+        "save_strategy": "epoch",
+        "evaluation_strategy": "epoch",
+        "optim": "paged_adamw_32bit"
+      },
+      "lora": {
+        "rank": 128,
+        "alpha": 32,
+        "dropout": 0.1,
+        "bias": "none"
+      },
+      "notes": "For high-resource environments. Larger model and longer sequences."
+    },
+    "edge_device_minimal": {
+      "description": "Minimal configuration for edge deployment",
+      "model": {
+        "base_model": "unsloth/llama-2-7b-bnb-4bit",
+        "max_seq_length": 512,
+        "quantization": "4-bit",
+        "dtype": "auto"
+      },
+      "training": {
+        "num_epochs": 1,
+        "batch_size": 1,
+        "gradient_accumulation_steps": 4,
+        "learning_rate": 1e-4,
+        "warmup_steps": 10,
+        "weight_decay": 0.01
+      },
+      "lora": {
+        "rank": 16,
+        "alpha": 8,
+        "dropout": 0.1,
+        "bias": "none"
+      },
+      "notes": "Extreme memory optimization. Very small LoRA rank for edge devices."
+    }
+  },
+  "hyperparameter_recommendations": {
+    "learning_rate": {
+      "default": 5e-4,
+      "range": "1e-5 to 1e-3",
+      "guidance": "Lower for domain-specific adaptation, higher for general fine-tuning. Medical domain: 5e-4"
+    },
+    "lora_rank": {
+      "default": 64,
+      "range": "8 to 256",
+      "guidance": "Larger rank = more capacity but slower. For medical: 64 is good balance"
+    },
+    "lora_alpha": {
+      "default": 16,
+      "calculation": "Typically rank/2 to rank/4",
+      "guidance": "Controls LoRA scaling. 16 works well for rank=64"
+    },
+    "batch_size": {
+      "default": 4,
+      "guidance": "Reduce if OOM. Balance memory vs gradient stability"
+    },
+    "epochs": {
+      "default": 3,
+      "guidance": "For medical domain: 3-5 epochs usually sufficient. Monitor validation loss"
+    },
+    "warmup_steps": {
+      "default": 100,
+      "calculation": "~10% of total training steps",
+      "guidance": "Helps stability during early training"
+    }
+  },
+  "medical_domain_templates": {
+    "instruction_format": "Below is a medical question and its answer. Provide a clear, accurate response.\n\n### Question:\n{question}\n\n### Answer:\n{answer}",
+    "clinical_specialties": [
+      "Cardiology",
+      "Neurology",
+      "Oncology",
+      "Nephrology",
+      "Pulmonology",
+      "Gastroenterology",
+      "Endocrinology",
+      "Hematology",
+      "Psychiatry",
+      "Orthopedics",
+      "Emergency Medicine",
+      "Internal Medicine"
+    ],
+    "common_medical_tasks": [
+      "Symptom diagnosis",
+      "Treatment recommendations",
+      "Medication interactions",
+      "Disease pathophysiology",
+      "Clinical guidelines",
+      "Risk factor assessment",
+      "Lab value interpretation"
+    ]
+  },
+  "dataset_sources": {
+    "public_medical_datasets": [
+      {
+        "name": "MedQA",
+        "url": "https://huggingface.co/datasets/primateai/medqa",
+        "size": "~5000 questions",
+        "description": "Medical exam questions"
+      },
+      {
+        "name": "BioASQ",
+        "url": "http://www.bioasq.org/",
+        "size": "~1000 questions",
+        "description": "Biomedical semantic indexing and question answering"
+      },
+      {
+        "name": "MIMIC-III",
+        "url": "https://mimic.mit.edu/",
+        "size": "~60k clinical notes",
+        "description": "De-identified clinical data (requires registration)"
+      }
+    ],
+    "data_preparation_steps": [
+      "1. Collect or download medical Q&A data",
+      "2. Clean and validate data (remove duplicates, encode issues)",
+      "3. Format according to instruction template",
+      "4. Split into train/eval sets",
+      "5. Validate domain relevance and data quality",
+      "6. Save in CSV or JSONL format"
+    ]
+  },
+  "performance_benchmarks": {
+    "colab_t4": {
+      "gpu_memory": "15 GB",
+      "training_time_per_epoch": "3-5 minutes",
+      "model": "Llama 2 7B",
+      "batch_size": 4,
+      "max_sequences": 2048,
+      "achievable_loss": "0.8-1.0"
+    },
+    "a100_40gb": {
+      "gpu_memory": "40 GB",
+      "training_time_per_epoch": "2-3 minutes",
+      "model": "Llama 2 13B",
+      "batch_size": 8,
+      "max_sequences": 4096,
+      "achievable_loss": "0.6-0.8"
+    }
+  },
+  "troubleshooting": {
+    "out_of_memory": [
+      "Reduce batch_size (try 2 or 1)",
+      "Reduce max_seq_length (try 1024)",
+      "Reduce lora_rank (try 32 or 16)",
+      "Use smaller base model",
+      "Enable gradient checkpointing"
+    ],
+    "poor_medical_responses": [
+      "Increase training data size",
+      "Train for more epochs",
+      "Increase learning rate slightly",
+      "Use higher quality medical sources",
+      "Verify instruction format matches training"
+    ],
+    "slow_training": [
+      "Ensure Unsloth is properly installed",
+      "Verify GPU is being used (check nvidia-smi)",
+      "Check for disk I/O bottlenecks",
+      "Increase batch size if memory allows",
+      "Profile with torch.profiler"
+    ]
+  },
+  "inference_deployment": {
+    "local_inference": {
+      "setup": "Load adapter using PEFT and Transformers",
+      "requirements": "GPU with 16GB+ VRAM recommended",
+      "example_framework": "Python script with fastapi/flask"
+    },
+    "api_deployment": {
+      "setup": "Use vLLM or FastAPI for REST API",
+      "requirements": "GPU with 10GB+ VRAM",
+      "scaling": "Multi-GPU with ray or vLLM"
+    },
+    "edge_deployment": {
+      "setup": "Merge adapter, quantize for mobile",
+      "requirements": "8GB+ storage for model",
+      "options": "ONNX, TensorRT, CoreML"
+    }
+  },
+  "references": {
+    "papers": [
+      {
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "authors": "Hu et al., 2021",
+        "url": "https://arxiv.org/abs/2106.09714"
+      },
+      {
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "authors": "Dettmers et al., 2023",
+        "url": "https://arxiv.org/abs/2305.14314"
+      }
+    ],
+    "libraries": [
+      {
+        "name": "Unsloth",
+        "url": "https://github.com/unslothai/unsloth",
+        "purpose": "Optimized LLM training"
+      },
+      {
+        "name": "PEFT",
+        "url": "https://huggingface.co/docs/peft",
+        "purpose": "Parameter-efficient fine-tuning"
+      },
+      {
+        "name": "Transformers",
+        "url": "https://huggingface.co/transformers/",
+        "purpose": "Model loading and inference"
+      }
+    ]
+  },
+  "checklist": {
+    "before_training": [
+      "GPU/CUDA available and working",
+      "All dependencies installed",
+      "Medical dataset prepared and validated",
+      "Output directory exists",
+      "Hyperparameters reviewed"
+    ],
+    "during_training": [
+      "Monitor GPU memory usage",
+      "Watch training loss decreasing",
+      "Check evaluation metrics",
+      "Save checkpoints regularly",
+      "Monitor training time"
+    ],
+    "after_training": [
+      "Adapter saved successfully",
+      "Test on sample medical queries",
+      "Documentation complete",
+      "Compare with base model",
+      "Plan deployment strategy"
+    ]
+  }
+}

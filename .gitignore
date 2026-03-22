@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.venv
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+.jupyter/
+*.ipynb_checkpoints
+
+# Model and Data
+medical_lora_adapter_*/
+*.bin
+*.safetensors
+*.pt
+*.pth
+checkpoints/
+models/
+data/
+outputs/
+
+# Logs
+logs/
+*.log
+*.logs
+
+# Cache
+.cache/
+__pycache__/
+*.cache
+huggingface_cache/
+.pytest_cache/
+
+# TensorBoard
+runs/
+tensorboard_logs/
+
+# Results
+results/
+inference_results.json
+training_results.json
+
+# Temporary
+temp/
+tmp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
